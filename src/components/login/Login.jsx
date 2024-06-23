@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import './Login.css'
 import { toast } from 'react-toastify'
+import { auth } from '../../lib/firebase'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 const Login = () => {
     const [avatar,setAvatar] = useState({
         file:null,
@@ -14,32 +16,49 @@ const Login = () => {
             url:URL.createObjectURL(e.target.files[0])
         })
     }
+    };
+
+    
+
+    const handleRegister= async(e)=>{
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const { username,email,password}=Object.fromEntries(formData);
+  
+        try{
+            
+          const res = await createUserWithEmailAndPassword(auth,email,password); 
+         
+        }
+        catch(err){
+          console.log(err)
+          toast.error(err.message)
+        }
+  
     }
 
-    const handleLogin=(e)=>{
-        e.preventDefault();
-    }
+    const handleLogin=(e)=>{}
   return (
     <div className='login'>
       <div className='item'>
         <h2>Welcome Back,</h2>
         <form onSubmit={handleLogin}>
-            <input type="email" name="email" id=""  placeholder='Email'/>
-            <input type="password" name="password" id=""  placeholder='Password'/>
+            <input type="email" name="email"   placeholder='Email'/>
+            <input type="password" name="password" placeholder='Password'/>
             <button>Sign In</button>
         </form>
       </div>
       <div className='separator'></div>
       <div className='item'>
       <h2>Create an Account</h2>
-        <form>
+        <form onClick={handleRegister}>
             <label htmlFor='file'>
                 <img src={avatar.url || "./avatar.png"} alt="userimg"/>
                 Upload an Image</label>
-            <input type="file" name="" id="file" style={{display:'none'}} onChange={handleAvatar} />
-            <input type="text" name="username" id=""  placeholder='Username'/>
-            <input type="email" name="email" id=""  placeholder='Email'/>
-            <input type="password" name="password" id=""  placeholder='Password'/>
+            <input type="file"  id="file" style={{display:'none'}} onChange={handleAvatar} />
+            <input type="text" name="username"  placeholder='Username'/>
+            <input type="text" name="email"  placeholder='Email'/>
+            <input type="password" name="password"  placeholder='Password'/>
             <button>Sign Up</button>
         </form>
       </div>
