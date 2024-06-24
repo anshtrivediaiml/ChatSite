@@ -58,6 +58,10 @@
                     background-color: #0f63b7;
                     transition: all 0.3s ease-in-out;
                 }
+                &:disabled{
+                    cursor:not-allowed;
+                    background-color: #1f8ff19c;
+                }
             }
         }
     }
