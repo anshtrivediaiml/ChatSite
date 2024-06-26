@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import './addUser.css'
-import { collection, query } from 'firebase/firestore';
+import { arrayUnion, collection, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
+import {useUserStore} from '../../../../lib/userStore';
 const addUser = () => {
   const [user,setUser]=useState(null)
+  const {currentUser}=useUserStore();
 
   const handleSearch=async(e)=>{
     e.preventDefault();
@@ -12,31 +14,63 @@ const addUser = () => {
     try{
       const userRef=collection(db,'users');
       //create a query against a collection
-      const query=query(userRef,where('username','==',username));
+      const q=query(userRef,where('username','==',username));
 
-      const querySnapshot=await getDocs(query);
+      const querySnapshot=await getDocs(q);
 
       if(!querySnapshot.empty){
        setUser(querySnapshot.docs[0].data());
       }
-
     }catch(err){
+      console.log(err);
+    }
+  }
+
+  const handleAdd=async()=>{
+    const chatRef=collection(db,"chats");
+    const userChatsRef=collection(db,"users")
+    try{
+
+      const newChatRef=doc(chatRef)
+      await setDoc(doc(newChatRef),{
+        createdAt: serverTimestamp(),
+        messages:[],
+      });
+
+      await updateDoc(doc(userChatsRef,user.id),{
+        chats:arrayUnion({
+          chatId:newChatRef.id,
+          lastMessage:"",
+          receiverId:currentUser.id,
+          updatedAt:Date.now(),
+        })
+      })
+      await updateDoc(doc(userChatsRef,currentUser.id),{
+        chats:arrayUnion({
+          chatId:newChatRef.id,
+          lastMessage:"",
+          receiverId:user.id,
+          updatedAt:Date.now(),
+        })
+      })
+    }
+    catch(err){
       console.log(err);
     }
   }
   return (
     <div className='addUser'>
       <form onSubmit={handleSearch}>
-       <input type="text" placeholder='Username' name="username" />
+       <input type="text" placeholder='Username' name="username"/>
        <button>Search</button>
       </form>
-      <div className="user">
+      {user &&<div className="user">
         <div className="detail">
-            <img src="./avatar.png" alt=""/>
-            <span>Jane Doe</span>
+            <img src={user.avatar ||"./avatar.png"}alt=""/>
+            <span>{user.username}</span>
         </div>
-        <button>Add User</button>
-      </div>
+        <button onClick={handleAdd}>Add User</button>
+      </div> }
     </div>
   )
 }
