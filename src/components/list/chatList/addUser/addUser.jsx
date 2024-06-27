@@ -28,7 +28,7 @@ const addUser = () => {
 
   const handleAdd=async()=>{
     const chatRef=collection(db,"chats");
-    const userChatsRef=collection(db,"users")
+    const userChatsRef=collection(db,"userchats")
     try{
 
       const newChatRef=doc(chatRef)
@@ -36,7 +36,7 @@ const addUser = () => {
         createdAt: serverTimestamp(),
         messages:[],
       });
-
+ 
       await updateDoc(doc(userChatsRef,user.id),{
         chats:arrayUnion({
           chatId:newChatRef.id,
@@ -56,6 +56,7 @@ const addUser = () => {
     }
     catch(err){
       console.log(err);
+    
     }
   }
   return (
