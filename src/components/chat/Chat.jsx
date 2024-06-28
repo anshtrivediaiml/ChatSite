@@ -1,10 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import './Chat.css'
 import EmojiPicker from 'emoji-picker-react';
+import { arrayUnion, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { useChatStore } from '../../lib/chatStore';
+import { useUserStore } from '../../lib/userStore';
 
 const Chat = () => {
   const [emojibutton,setEmojiButton]=useState(false);
   const [text,setText]=useState('');
+  const [chat,setChat]=useState();
+  const {chatId}=useChatStore();
+  const {currentUser}=useUserStore();
 
   const endRef= useRef(null);
 
@@ -12,9 +19,36 @@ const Chat = () => {
     endRef.current.scrollIntoView({behavior:'smooth'});
   },[])
 
+  useEffect(()=>{
+    const unSub=onSnapshot(doc(db,"chats",chatId),(res)=>{
+      setChat(res.data());
+    })
+
+    return ()=>{
+      unSub();
+    }
+  },[chatId])
+
+  console.log(chat);
   const handleEmoji=(e)=>{
    setText((prev)=>prev+e.emoji);
    setEmojiButton(false);
+  }
+
+  const handleSend=async()=>{
+     if(text==='')return;
+     try{
+       await updateDoc(doc(db,"chats",chatId),{
+        messages:arrayUnion({
+          senderId:currentUser.id,
+          text,
+          createdAt:new Date(),
+        })
+       }) 
+     }
+     catch(err){
+      console.log(err);
+     }
   }
   return (
     <div className='chat'>
@@ -34,59 +68,20 @@ const Chat = () => {
       </div>
 
       <div className='center'>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
+        {
+          chat?.messages?.map((msg)=>{
+            <div className="message own" key={msg?.createdAt}>
           <div className='texts'>
+         {msg.img &&<img src={msg.img}>
+          </img>}
             <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
+              {msg.text}
             </p>
               <span>1 min ago</span>
           </div>
         </div>
-        <div className="message own">
-          <div className='texts'>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
-            </p>
-              <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
-          <div className='texts'>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
-            </p>
-              <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message own">
-          <div className='texts'>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
-            </p>
-              <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
-          <div className='texts'>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
-            </p>
-              <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message own">
-          <div className='texts'>
-          <img src="https://images.pexels.com/photos/313032/pexels-photo-313032.jpeg?auto=compress&cs=tinysrgb&w=300">
-          </img>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur recusandae necessitatibus perferendis at architecto fugiat!
-            </p>
-              <span>1 min ago</span>
-          </div>
-        </div>
+          })
+          }
         <div ref={endRef}></div>
       </div>
 
@@ -105,7 +100,7 @@ const Chat = () => {
       <EmojiPicker open={emojibutton} onEmojiClick={handleEmoji}/>
           </div>
         </div>
-        <button className='sendButton'>Send</button>
+        <button className='sendButton' onClick={handleSend}>Send</button>
       </div>
     </div>
   )

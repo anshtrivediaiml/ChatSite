@@ -3,6 +3,7 @@ import './addUser.css'
 import { arrayUnion, collection, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
 import {useUserStore} from '../../../../lib/userStore';
+import { set } from 'firebase/database';
 const addUser = () => {
   const [user,setUser]=useState(null)
   const {currentUser}=useUserStore();
@@ -32,11 +33,11 @@ const addUser = () => {
     try{
 
       const newChatRef=doc(chatRef)
-      await setDoc(doc(newChatRef),{
+      
+      await setDoc(newChatRef,{
         createdAt: serverTimestamp(),
         messages:[],
       });
- 
       await updateDoc(doc(userChatsRef,user.id),{
         chats:arrayUnion({
           chatId:newChatRef.id,
@@ -53,7 +54,7 @@ const addUser = () => {
           updatedAt:Date.now(),
         })
       })
-    }
+    } 
     catch(err){
       console.log(err);
     
