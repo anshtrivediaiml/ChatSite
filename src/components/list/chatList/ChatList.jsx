@@ -8,7 +8,6 @@ import { useChatStore } from '../../../lib/chatStore';
 const ChatList = () => {
   const [addMode,setAddMode]=useState(false);
   const [chats,setChats]=useState([]);
-
   const {currentUser}=useUserStore();
   const{changeChat}=useChatStore();
 
@@ -38,21 +37,18 @@ const ChatList = () => {
     return rest;
   });
   const chatIndex=userChats.findIndex(item=>item.chatId===chat.chatId);
-
-  userChats[chatIndex].isSeen=true;
+ userChats[chatIndex].isSeen=true;
   const userChatsRef=doc(db,"userchats",currentUser.id);
 
   try{
     await updateDoc(userChatsRef,{
       chats:userChats,
-
     })
   }catch(err){
     console.log(err);
   }
-
- 
  }
+
 
   return (
     <div className='chatList'>
@@ -78,10 +74,8 @@ const ChatList = () => {
                </div>
             )
           })}
-             
-           { addMode && <AddUser/>}
+           { addMode &&  <AddUser/>}
     </div>
   )
 }
-
 export default ChatList
