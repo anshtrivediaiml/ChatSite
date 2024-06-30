@@ -5,13 +5,18 @@ import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { useChatStore } from '../../lib/chatStore';
 import { useUserStore } from '../../lib/userStore';
+import upload from '../../lib/upload';
 
 const Chat = () => {
   const [emojibutton,setEmojiButton]=useState(false);
   const [text,setText]=useState("");
   const [chat,setChat]=useState();
-  const {chatId,user}=useChatStore();
+  const {chatId,user,isCurrentUserBlocked,isReceiverBlocked}=useChatStore();
   const {currentUser}=useUserStore();
+  const [img,setImg]=useState({
+    file:null,
+    url:"",
+  });
 
   const endRef= useRef(null);
 
@@ -34,14 +39,30 @@ const Chat = () => {
    setEmojiButton(false);
   }
 
+  const handleImage=(e)=>{
+    if(e.target.files[0]){
+    setImg({
+      file:e.target.files[0],
+      url:URL.createObjectURL(e.target.files[0]),
+    });
+    }
+      };
+
   const handleSend=async()=>{
      if(text==="")return;
+
+     let imgUrl=null;
      try{
+
+      if(img.file){
+        imgUrl= await upload(img.file);
+      }
        await updateDoc(doc(db,"chats",chatId),{
         messages:arrayUnion({
           senderId:currentUser.id,
           text,
           createdAt:new Date(),
+          ...(imgUrl && {img:imgUrl}), 
         }),
        }); 
 
@@ -71,14 +92,22 @@ const Chat = () => {
      catch(err){
       console.log(err);
      }
+
+     setImg({
+      file:null,
+      url:"",
+     })
+
+      setText("");
   }
+
   return (
     <div className='chat'>
       <div className='top'>
         <div className="user">
-          <img src="./avatar.png" alt=""/>
+          <img src={user?.avatar || "./avatar.png"}alt=""/>
           <div className="texts">
-          <span>John Doe</span>
+          <span>{user.username}</span>
           <p>Lorem ipsum dolor sit amet.</p>
           </div>
         </div>
@@ -92,7 +121,7 @@ const Chat = () => {
       <div className='center'>
         {
           chat?.messages?.map((message)=>(
-            <div className="message own" key={message?.createdAt}>
+            <div className={message.senderId===currentUser?.id ?"message own":"message"} key={message?.createdAt}>
           <div className='texts'>
          {message.img && <img src={message.img} alt=""/>}
             <p>
@@ -101,19 +130,31 @@ const Chat = () => {
               {/* <span>{message.createdAt}</span> */}
           </div>
         </div>
-          ))
-          }
+          )) }
+          {img.url && 
+          <div className='message own'>
+            <div className='texts'>
+             <img src={img.url} alt=""/>
+            </div>
+          </div> }
         <div ref={endRef}></div>
       </div>
 
 
       <div className='bottom'>
         <div className="icons">
+          <label htmlFor='file'>
        <img src="./img.png"/>
+          </label>
+       <input type="file"
+       id="file"
+       style={{display:"none"}} onChange={handleImage}/>
        <img src="./camera.png"/>
        <img src="./mic.png"/>
         </div>
-        <input type="text" placeholder='Type a message...' value={text} onChange={(e)=>setText(e.target.value)} />
+        <input type="text" placeholder={isCurrentUserBlocked || isReceiverBlocked?"You cannot send a message":'Type a message...'} value={text} onChange={(e)=>setText(e.target.value)}
+        disabled={isCurrentUserBlocked || isReceiverBlocked}
+        />
         <div className='emoji'>
           <img src="./emoji.png" alt="" onClick={()=>setEmojiButton(prev=>!prev)}/>
 
@@ -121,7 +162,7 @@ const Chat = () => {
       <EmojiPicker open={emojibutton} onEmojiClick={handleEmoji}/>
           </div>
         </div>
-        <button className='sendButton' onClick={handleSend}>Send</button>
+        <button className='sendButton' onClick={handleSend} disabled={isCurrentUserBlocked || isReceiverBlocked}>Send</button>
       </div>
     </div>
   )
